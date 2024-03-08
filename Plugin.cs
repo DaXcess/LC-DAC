@@ -12,16 +12,15 @@ namespace DAC
         private const string PLUGIN_NAME = "DAC";
         private const string PLUGIN_VERSION = "1.0.0";
 
-        private static readonly Harmony RuntimeHarmony = new("io.daxcess.lc-anticheat-runtime");
-        private static readonly Harmony EntryHarmony = new("io.daxcess.lc-anticheat-entrypoint");
+        private static readonly Harmony patcher = new("io.daxcess.lc-anticheat-entrypoint");
 
         private void Awake()
         {
             DAC.Logger.SetSource(Logger);
 
-            EntryHarmony.Patch(AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.Start)),
+            patcher.Patch(AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.Start)),
                 postfix: new HarmonyMethod(typeof(Plugin), nameof(OnGameEntered)));
-            EntryHarmony.Patch(AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.OnDestroy)),
+            patcher.Patch(AccessTools.Method(typeof(StartOfRound), nameof(StartOfRound.OnDestroy)),
                 postfix: new HarmonyMethod(typeof(Plugin), nameof(OnGameLeft)));
 
             // Hide from mod list to prevent clients from finding out whether or not the server has anticheat
@@ -36,12 +35,12 @@ namespace DAC
                 return;
             }
             
-            RuntimeHarmony.PatchAll(Assembly.GetExecutingAssembly());
+            DACPatcher.ApplyPatches();
         }
 
         private static void OnGameLeft()
         {
-            RuntimeHarmony.UnpatchSelf();
+            DACPatcher.RevertPatches();
         }
     }
 }

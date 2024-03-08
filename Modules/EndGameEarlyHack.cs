@@ -1,5 +1,4 @@
 using HarmonyLib;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace DAC.Modules;
@@ -10,34 +9,19 @@ namespace DAC.Modules;
 [HarmonyPatch]
 internal static class EndGameEarlyHack
 {
-    private static bool _calledByHandler;
-    private static int _actualPlayerWhoTriggered;
-
-    /// <summary>
-    /// Store real player id
-    /// </summary>
-    [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.__rpc_handler_2028434619))]
-    [HarmonyPrefix]
-    private static void OnBeforeEndGame(ref __RpcParams rpcParams)
-    {
-        _calledByHandler = true;
-        _actualPlayerWhoTriggered = (int)rpcParams.Server.Receive.SenderClientId;
-    }
-    
     /// <summary>
     /// Prevent ending the game under invalid circumstances
     /// </summary>
     [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.EndGameServerRpc))]
     [HarmonyPrefix]
-    private static bool OnEndGame(int playerClientId)
+    private static bool OnEndGame(StartOfRound __instance, int playerClientId)
     {
-        if (!_calledByHandler)
-            _actualPlayerWhoTriggered = 0;
+        var actualPlayerWhoTriggered = __instance.ExecutingPlayer();
         
-        if (_actualPlayerWhoTriggered != playerClientId)
+        if ((int)actualPlayerWhoTriggered.playerClientId != playerClientId)
         {
             Logger.LogWarning(
-                $"Player {StartOfRound.Instance.allPlayerScripts[_actualPlayerWhoTriggered].playerUsername} tried to leave the ship under an impersonated identity");
+                $"Player {actualPlayerWhoTriggered.playerUsername} tried to end the game whilst impersonating another player");
             return false;
         }
 
@@ -58,12 +42,5 @@ internal static class EndGameEarlyHack
         }
 
         return true;
-    }
-
-    [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.EndGameServerRpc))]
-    [HarmonyPostfix]
-    private static void AfterEndGame()
-    {
-        _calledByHandler = false;
     }
 }

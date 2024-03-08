@@ -9,11 +9,17 @@ namespace DAC.Modules;
 [HarmonyPatch]
 internal static class ShipObjectRotationHack
 {
-    // TODO: Implement
     [HarmonyPatch(typeof(ShipBuildModeManager), nameof(ShipBuildModeManager.PlaceShipObjectServerRpc))]
-    [HarmonyPostfix]
-    private static void OnPlaceObject(Vector3 placementRotation)
+    [HarmonyPrefix]
+    private static bool OnPlaceObject(ShipBuildModeManager __instance, ref Vector3 newRotation)
     {
-        Logger.LogDebug($"Rotation: {placementRotation}");
+        if (Mathf.Abs(newRotation.x - 270) > 0.1f || Mathf.Abs(newRotation.z) > 0.1f)
+        {
+            Logger.LogWarning(
+                $"Player {__instance.ExecutingPlayer().playerUsername} tried setting an invalid rotation on a ship object");
+            return false;
+        }
+
+        return true;
     }
 }

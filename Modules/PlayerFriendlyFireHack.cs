@@ -1,6 +1,5 @@
 using GameNetcodeStuff;
 using HarmonyLib;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace DAC.Modules;
@@ -13,28 +12,16 @@ namespace DAC.Modules;
 [HarmonyPatch]
 internal static class PlayerFriendlyFireHack
 {
-    private static bool _calledByHandler;
-    private static int _actualPlayerWhoHit;
-
-    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.__rpc_handler_638895557))]
-    [HarmonyPrefix]
-    private static void OnBeforeDamageFromOtherPlayer(ref __RpcParams rpcParams)
-    {
-        _calledByHandler = true;
-        _actualPlayerWhoHit = (int)rpcParams.Server.Receive.SenderClientId;
-    }
-    
     [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayerFromOtherClientServerRpc))]
     [HarmonyPrefix]
     private static bool OnDamageFromOtherPlayer(PlayerControllerB __instance, ref int damageAmount, int playerWhoHit)
     {
-        if (!_calledByHandler)
-            _actualPlayerWhoHit = 0;
+        var actualPlayerWhoHit = __instance.ExecutingPlayer();
         
-        if (_actualPlayerWhoHit != playerWhoHit)
+        if ((int)actualPlayerWhoHit.playerClientId != playerWhoHit)
         {
             Logger.LogWarning(
-                $"Player {StartOfRound.Instance.allPlayerScripts[_actualPlayerWhoHit]} tried to spoof dealing damage to another player");
+                $"Player {actualPlayerWhoHit.playerUsername} tried to spoof dealing damage to another player");
 
             // Just block this damage outright instead of rectifying the player who hit
             return false;
@@ -118,12 +105,5 @@ internal static class PlayerFriendlyFireHack
         }
 
         return true;
-    }
-
-    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayerFromOtherClientServerRpc))]
-    [HarmonyPostfix]
-    private static void AfterDamagePlayerFromOtherClient()
-    {
-        _calledByHandler = false;
     }
 }
