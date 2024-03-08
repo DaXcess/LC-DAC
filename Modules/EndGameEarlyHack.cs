@@ -17,28 +17,30 @@ internal static class EndGameEarlyHack
     private static bool OnEndGame(StartOfRound __instance, int playerClientId)
     {
         var actualPlayerWhoTriggered = __instance.ExecutingPlayer();
-        
+
         if ((int)actualPlayerWhoTriggered.playerClientId != playerClientId)
         {
-            Logger.LogWarning(
-                $"Player {actualPlayerWhoTriggered.playerUsername} tried to end the game whilst impersonating another player");
-            return false;
+            if (actualPlayerWhoTriggered.ReportHack(Detection.EndGame,
+                    $"Player {actualPlayerWhoTriggered.playerUsername} tried to end the game whilst impersonating another player"))
+                return false;
         }
 
         var player = StartOfRound.Instance.allPlayerScripts[playerClientId];
 
         if (player.isPlayerDead)
         {
-            Logger.LogWarning($"Player {player.playerUsername} tried to end the game whilst being dead");
-            return false;
+            if (player.ReportHack(Detection.EndGame,
+                    $"Player {player.playerUsername} tried to end the game whilst being dead"))
+                return false;
         }
 
         var lever = Object.FindObjectOfType<StartMatchLever>();
 
         if (Vector3.Distance(player.transform.position, lever.transform.position) > 5f)
-        { 
-            Logger.LogWarning($"Player {player.playerUsername} tried to end the game whilst being too far away from the lever");
-            return false;
+        {
+            if (player.ReportHack(Detection.EndGame,
+                    $"Player {player.playerUsername} tried to end the game whilst being too far away from the lever"))
+                return false;
         }
 
         return true;

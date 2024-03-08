@@ -17,14 +17,12 @@ internal static class PlayerFriendlyFireHack
     private static bool OnDamageFromOtherPlayer(PlayerControllerB __instance, ref int damageAmount, int playerWhoHit)
     {
         var actualPlayerWhoHit = __instance.ExecutingPlayer();
-        
+
         if ((int)actualPlayerWhoHit.playerClientId != playerWhoHit)
         {
-            Logger.LogWarning(
-                $"Player {actualPlayerWhoHit.playerUsername} tried to spoof dealing damage to another player");
-
-            // Just block this damage outright instead of rectifying the player who hit
-            return false;
+            if (actualPlayerWhoHit.ReportHack(Detection.FriendlyFireSpoof,
+                    $"Player {actualPlayerWhoHit.playerUsername} tried to spoof dealing damage to another player"))
+                return false;
         }
 
         var player = StartOfRound.Instance.allPlayerScripts[playerWhoHit];
@@ -32,18 +30,18 @@ internal static class PlayerFriendlyFireHack
         // Don't allow dead players to damage other players
         if (player.isPlayerDead)
         {
-            Logger.LogWarning(
-                $"Player {player.playerUsername} tried to damage {__instance.playerUsername} whilst being dead");
-            return false;
+            if (player.ReportHack(Detection.FriendlyFire,
+                    $"Player {player.playerUsername} tried to damage {__instance.playerUsername} whilst being dead"))
+                return false;
         }
 
         // Don't allow players holding anything other than a Shovel or Shotgun to damage other players
         // This might prevent certain mods that add items to damage other players with from working
         if (player.currentlyHeldObjectServer is not Shovel && player.currentlyHeldObjectServer is not ShotgunItem)
         {
-            Logger.LogWarning(
-                $"Player {player.playerUsername} tried to damage {__instance.playerUsername} whilst not holding a valid item");
-            return false;
+            if (player.ReportHack(Detection.FriendlyFire,
+                    $"Player {player.playerUsername} tried to damage {__instance.playerUsername} whilst not holding a valid item"))
+                return false;
         }
 
         if (player.currentlyHeldObjectServer is Shovel shovel)
@@ -52,9 +50,9 @@ internal static class PlayerFriendlyFireHack
             if (Vector3.Distance(__instance.playerCollider.ClosestPoint(player.transform.position),
                     player.transform.position) > 2.5f)
             {
-                Logger.LogWarning(
-                    $"Player {player.playerUsername} tried to damage {__instance.playerUsername} with a shovel from too far away");
-                return false;
+                if (player.ReportHack(Detection.FriendlyFire,
+                        $"Player {player.playerUsername} tried to damage {__instance.playerUsername} with a shovel from too far away"))
+                    return false;
             }
 
             var expectedDamageAmount = shovel.shovelHitForce switch

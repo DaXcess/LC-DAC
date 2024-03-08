@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using GameNetcodeStuff;
 using HarmonyLib;
 using Unity.Netcode;
@@ -55,8 +53,8 @@ public static class DACPatcher
             foreach (var method in allRpcMethods)
             {
                 patcher.Patch(method,
-                    new HarmonyMethod(AccessTools.Method(typeof(DACPatcher), nameof(BeforeRpcHandle))),
-                    new HarmonyMethod(AccessTools.Method(typeof(DACPatcher), nameof(AfterRpcHandle))));
+                    new HarmonyMethod(((Action<NetworkBehaviour, __RpcParams>)BeforeRpcHandle).Method),
+                    new HarmonyMethod(((Action<NetworkBehaviour>)AfterRpcHandle).Method));
             }
         }
         
@@ -81,6 +79,6 @@ public static class DACPatcher
     public static PlayerControllerB ExecutingPlayer(this NetworkBehaviour behaviour)
     {
         return StartOfRound.Instance.allPlayerScripts.First(player =>
-            player.OwnerClientId == rpcPlayerCache[behaviour]);
+            player.actualClientId == rpcPlayerCache[behaviour]);
     }
 }
