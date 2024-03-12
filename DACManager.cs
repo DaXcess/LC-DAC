@@ -57,7 +57,7 @@ public static class DACManager
         ref NetworkManager.ConnectionApprovalRequest request,
         NetworkManager.ConnectionApprovalResponse response)
     {
-        if (__instance.disableSteam || !response.Approved)
+        if (__instance.disableSteam || !response.Approved || !__instance.currentLobby.HasValue)
             return;
 
         var payload = Encoding.ASCII.GetString(request.Payload).Split(",");
@@ -70,7 +70,7 @@ public static class DACManager
             return;
         }
 
-        if (!__instance.currentLobby.Value.Members.Any(user => user.Id.Value == steamId))
+        if (__instance.currentLobby.Value.Members.All(user => user.Id.Value != steamId))
         {
             response.Reason = "[DAC] Steam Client ID rejected";
             response.Approved = false;
