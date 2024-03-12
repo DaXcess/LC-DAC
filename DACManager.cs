@@ -22,24 +22,25 @@ public static class DACManager
         { Detection.StartGame, DetectionResponse.IgnoreRpc },
         { Detection.Terminal, DetectionResponse.IgnoreRpc },
         { Detection.TerminalPrice, DetectionResponse.WarnOnly }, // Even on WarnOnly, the price will get rectified
+        { Detection.Placement, DetectionResponse.IgnoreRpc }
     };
-    
+
     private static readonly Dictionary<ulong, ulong> ngoIdToSteamId = [];
     private static readonly Dictionary<ulong, Detection> bannedSteamIds = [];
 
     public static ulong GetSteamId(ulong playerId) => ngoIdToSteamId[playerId];
-    
+
     public static bool ReportHack(this PlayerControllerB player, Detection detection, string message)
     {
         // Ignore local player (host)
         if (player == StartOfRound.Instance.localPlayerController)
             return false;
-        
+
         Logger.LogWarning($"[{detection}] ${message}");
 
         if (detections[detection] is not (DetectionResponse.KickPlayer or DetectionResponse.BanPlayer))
             return detections[detection] != DetectionResponse.WarnOnly;
-        
+
         if (detections[detection] is DetectionResponse.BanPlayer)
             bannedSteamIds.Add(player.playerSteamId, detection);
 
@@ -52,7 +53,8 @@ public static class DACManager
 
     [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.ConnectionApproval))]
     [HarmonyPostfix]
-    private static void OnConnectionApproval(GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request,
+    private static void OnConnectionApproval(GameNetworkManager __instance,
+        ref NetworkManager.ConnectionApprovalRequest request,
         NetworkManager.ConnectionApprovalResponse response)
     {
         if (__instance.disableSteam || !response.Approved)
@@ -76,10 +78,10 @@ public static class DACManager
             return;
         }
 
-        if (bannedSteamIds.TryGetValue(steamId, out var reason))
+        if (bannedSteamIds.ContainsKey(steamId))
         {
             response.Reason =
-                $"[DAC] You have been banned for: {reason}\n\nYou can no longer participate in this lobby";
+                "[DAC] You have been banned from this lobby for cheating";
             response.Approved = false;
 
             return;
@@ -100,7 +102,8 @@ public enum Detection
     ShipObjectRotation,
     StartGame,
     Terminal,
-    TerminalPrice
+    TerminalPrice,
+    Placement
 }
 
 public enum DetectionResponse
