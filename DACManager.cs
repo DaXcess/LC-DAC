@@ -21,7 +21,7 @@ public static class DACManager
         { Detection.ShipObjectRotation, DetectionResponse.IgnoreRpc },
         { Detection.StartGame, DetectionResponse.IgnoreRpc },
         { Detection.Terminal, DetectionResponse.IgnoreRpc },
-        { Detection.TerminalPrice, DetectionResponse.WarnOnly }, // Even on WarnOnly, the price will get rectified
+        { Detection.TerminalPrice, DetectionResponse.IgnoreRpc }, // Even on WarnOnly, the price will get rectified
         { Detection.Placement, DetectionResponse.IgnoreRpc }
     };
 
